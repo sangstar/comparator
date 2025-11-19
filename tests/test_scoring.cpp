@@ -2,10 +2,6 @@
 // Created by Sanger Steel on 11/19/25.
 //
 
-//
-// Created by Sanger Steel on 11/18/25.
-//
-
 #include <catch2/catch_test_macros.hpp>
 
 #include "scorer.h"
