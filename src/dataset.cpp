@@ -4,6 +4,91 @@
 
 #include "dataset.h"
 
+inline std::string to_lower_copy(std::string_view sv) {
+    std::string out;
+    out.reserve(sv.size());
+    for (char c : sv)
+        out.push_back(std::tolower((unsigned char)c));
+    return out;
+}
+
+inline bool contains(std::string_view hay, std::string_view needle) {
+    return hay.find(needle) != std::string::npos;
+}
+
+
+inline bool search_yes(std::string_view s) {
+    auto lower = to_lower_copy(s);
+    return contains(lower, "yes") ||
+           contains(lower, "yep") ||
+           contains(lower, "ye")  ||
+           contains(lower, "y");
+}
+
+inline bool search_no(std::string_view s) {
+    auto lower = to_lower_copy(s);
+    return contains(lower, "nope") ||
+           contains(lower, "no")   ||
+           contains(lower, "n");
+}
+
+static auto str_contains = [](std::string_view str, std::string_view cmp) -> bool {
+    return strstr(str.data(), cmp.data()) != NULL;
+};
+
+
+const char* id_to_str(DatasetIds id) {
+    switch (id) {
+        case DatasetIds::NONE: return "NONE";
+        case DatasetIds::MRPC: return "MRPC";
+        default:
+            return "NONE";
+    }
+}
+
+DatasetIds dataset_id_from_str(const char* str) {
+    if (strstr(str, "mrpc") != nullptr) return DatasetIds::MRPC;
+    return DatasetIds::NONE;
+}
+
+std::optional<float> maybe_find_other_logprob(const std::function<bool(std::string&)>& search_fn, OAIResponseChoice& choice) {
+    for (auto& lp : choice.top_logprobs) {
+        if (search_fn(lp.token)) {
+            return lp.prob;
+        }
+    }
+    return std::nullopt;
+}
+
+
+QAResponse default_response_scorer(StreamedCompletions& resps, const ParquetRow* row) {
+    QAResponse resp{false, false};
+
+    size_t size = resps.size();
+
+    for (size_t i = 0; i < size; ++i) {
+        for (auto& choice : resps[i].choices) {
+            if (choice.text.empty()) continue;
+            bool label = static_cast<bool>(std::get<uint64_t>((*row)[2]));
+            bool is_yes = search_yes(choice.text);
+            bool is_no = search_no(choice.text);
+            if (is_yes) {
+                resp.yes = true;
+                resp.yes_logprob = choice.token_logprobs[0];
+                resp.no_logprob = maybe_find_other_logprob(search_no, choice);
+                if (label && is_yes) resp.passed = true;
+            }
+            else if (is_no) {
+                resp.yes = false;
+                resp.no_logprob = choice.token_logprobs[0];
+                resp.yes_logprob = maybe_find_other_logprob(search_yes, choice);
+                if (label && is_no) resp.passed = true;
+            }
+        }
+    }
+    return resp;
+}
+
 Dataset CreateMRPCDataset(const char* config, const char* split) {
     ParquetTableViewer data = get_hf_dataset("SetFit/mrpc", config, split);
     auto mrpc_prompt_creation_fn = [](const ParquetRow* row) -> std::string {
@@ -18,28 +103,7 @@ Dataset CreateMRPCDataset(const char* config, const char* split) {
         s.append("\\n\\nAnswer: ");
         return s;
     };
-    auto mrpc_scorer_fn = [](StreamedCompletions& resps, const ParquetRow* row) -> bool {
-        std::string text;
-
-        size_t tolerance = 3; // Allow this many tokens as grace to give a parseable answer
-        size_t size = resps.size();
-        size_t its = size <= tolerance ? size : tolerance;
-        for (size_t i = 0; i < its; ++i) {
-            for (auto& choice : resps[i].choices) {
-                text.append(choice.text);
-            }
-        }
-
-
-        auto str_contains = [](std::string_view str, std::string_view cmp) -> bool {
-            return strstr(str.data(), cmp.data()) != NULL;
-        };
-
-        bool label = static_cast<bool>(std::get<uint64_t>((*row)[2]));
-        bool yes_conds = str_contains(text,"yes") || str_contains(text, "Yes") || str_contains(text, "y") || str_contains(text, "Y") || str_contains(text, "ye");
-        return yes_conds && label;
-    };
-    return Dataset{data,mrpc_prompt_creation_fn, mrpc_scorer_fn };
+    return Dataset{data,mrpc_prompt_creation_fn, default_response_scorer };
 }
 
 Dataset CreateDataset(DatasetIds type, const char* config, const char* split) {

@@ -9,13 +9,28 @@
 #include "response_parser.h"
 
 enum class DatasetIds{
+    NONE,
     MRPC,
+};
+
+constexpr const char* DatasetIdStrs[] = {
+    "NONE",
+    "MPRC",
+};
+
+DatasetIds dataset_id_from_str(const char* str);
+
+struct QAResponse {
+    bool yes;
+    bool passed;
+    std::optional<float> yes_logprob;
+    std::optional<float> no_logprob;
 };
 
 struct Dataset {
     ParquetTableViewer data;
     std::string (*prompt_creation_fn)(const ParquetRow*);
-    bool (*response_scorer_fn)(StreamedCompletions&, const ParquetRow*);
+    QAResponse (*response_scorer_fn)(StreamedCompletions&, const ParquetRow*);
 };
 
 Dataset CreateMRPCDataset(const char* config, const char* split);

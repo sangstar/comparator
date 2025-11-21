@@ -208,8 +208,6 @@ ParquetTableViewer get_hf_dataset(const char* dataset, const char* config, const
 
     std::shared_ptr<arrow::Table> table;
     PARQUET_THROW_NOT_OK(pq_reader->ReadTable(&table));
-    std::cout << "Loaded rows: " << table->num_rows()
-            << " columns: " << table->num_columns() << "\n";
 
     return ParquetTableViewer(table);
 }

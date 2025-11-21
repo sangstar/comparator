@@ -10,6 +10,8 @@ find_package(Parquet REQUIRED CONFIG)
 
 Include(FetchContent)
 
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
+
 FetchContent_Declare(
         Catch2
         GIT_REPOSITORY https://github.com/catchorg/Catch2.git
@@ -45,6 +47,7 @@ add_library(comparator_lib ${SRC_FILES} ${INCLUDE_FILES})
 
 add_executable(comparator src/main.cpp)
 
+target_link_libraries(comparator_lib PUBLIC CURL::libcurl nlohmann_json::nlohmann_json Arrow::arrow_shared Parquet::parquet_shared nlohmann_json::nlohmann_json)
+
 target_link_libraries(comparator PRIVATE comparator_lib)
 
-target_link_libraries(comparator_lib PRIVATE CURL::libcurl nlohmann_json::nlohmann_json Arrow::arrow_shared Parquet::parquet_shared nlohmann_json::nlohmann_json)
