@@ -9,9 +9,7 @@
 #include "response_parser.h"
 #include "helpers.h"
 
-namespace dataset_types {
-    DECLARE_ENUM(DatasetIds, NONE, MRPC, COLA);
-}
+DECLARE_ENUM(DatasetIds, NONE, MRPC, COLA);
 
 struct QAResponse {
     bool tp;
@@ -31,7 +29,7 @@ struct Dataset {
 
 Dataset CreateMRPCDataset(const char* config, const char* split);
 
-Dataset CreateDataset(dataset_types::DatasetIds type, const char* config, const char* split);
+Dataset CreateDataset(comparator_enums::DatasetIds type, const char* config, const char* split);
 
 QAResponse yesno_response_scorer(StreamedCompletions& resps, const ParquetRow* row);
 

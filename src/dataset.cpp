@@ -111,9 +111,9 @@ Dataset CreateMRPCDataset(const char* config, const char* split) {
     return Dataset{data,mrpc_prompt_creation_fn, yesno_response_scorer };
 }
 
-Dataset CreateDataset(dataset_types::DatasetIds type, const char* config, const char* split) {
+Dataset CreateDataset(comparator_enums::DatasetIds type, const char* config, const char* split) {
     switch (type) {
-        case dataset_types::DatasetIds::MRPC: return CreateMRPCDataset(config, split);
+        case comparator_enums::DatasetIds::MRPC: return CreateMRPCDataset(config, split);
         default:
             throw std::runtime_error("Cannot make dataset for this type");
     }

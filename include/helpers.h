@@ -37,18 +37,21 @@ inline std::vector<std::string> str_split(std::string_view str) {
 
 
 #define DECLARE_ENUM(name, ...) \
-    enum name { __VA_ARGS__ }; \
-    constexpr const char* name##Strs = #__VA_ARGS__; \
-    constexpr name name##List[] = { __VA_ARGS__ }; \
-    inline std::string name##_to_str(size_t id) { \
+    namespace comparator_enums { \
+        enum name { __VA_ARGS__ }; \
+        constexpr const char* name##Strs = #__VA_ARGS__; \
+        constexpr name name##List[] = { __VA_ARGS__ }; \
+        inline std::string name##_to_str(size_t id) { \
         auto vals = str_split(name##Strs); \
         return vals[id]; \
-    } \
-    inline name str_to_##name(std::string_view str) { \
+        } \
+        inline name str_to_##name(std::string_view str) { \
         name ret; \
         ENUM_FROM_STR(name, str, ret); \
         return ret; \
+        } \
     }
+
 
 
 

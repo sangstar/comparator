@@ -55,11 +55,11 @@ void score_dataset(int idx, ScoreConfig config, const Dataset& dataset, ParquetB
 }
 
 void RunScoringTask(OverallScore& score, ScoreConfig config, const Scorer& scorer, int num_threads) {
-    score.score_str = scoring_enums::ScoreStrategies_to_str((size_t)scorer.strategy);
+    score.score_str = comparator_enums::ScoreStrategies_to_str((size_t)scorer.strategy);
 
     fprintf(stdout,
         "Running scoring task: dataset=%s, model=%s, endpoint=%s, config=%s, split=%s, scoring metric: %s, workers=%i\n",
-        dataset_types::DatasetIds_to_str((size_t)config.dataset_id).c_str(), config.model, config.endpoint, config.config, config.split, score.score_str.c_str(), num_threads);
+        comparator_enums::DatasetIds_to_str((size_t)config.dataset_id).c_str(), config.model, config.endpoint, config.config, config.split, score.score_str.c_str(), num_threads);
     Dataset mrpc = CreateDataset(config.dataset_id, config.config, config.split);
     std::thread threads[num_threads];
     std::vector<BatchedResult> results;
