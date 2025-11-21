@@ -7,18 +7,11 @@
 
 #include "parquet_handler.h"
 #include "response_parser.h"
+#include "helpers.h"
 
-enum class DatasetIds{
-    NONE,
-    MRPC,
-};
-
-constexpr const char* DatasetIdStrs[] = {
-    "NONE",
-    "MPRC",
-};
-
-DatasetIds dataset_id_from_str(const char* str);
+namespace dataset_types {
+    DECLARE_ENUM(DatasetIds, NONE, MRPC, COLA);
+}
 
 struct QAResponse {
     bool tp;
@@ -38,7 +31,7 @@ struct Dataset {
 
 Dataset CreateMRPCDataset(const char* config, const char* split);
 
-Dataset CreateDataset(DatasetIds type, const char* config, const char* split);
+Dataset CreateDataset(dataset_types::DatasetIds type, const char* config, const char* split);
 
 QAResponse yesno_response_scorer(StreamedCompletions& resps, const ParquetRow* row);
 

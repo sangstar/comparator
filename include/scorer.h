@@ -24,7 +24,7 @@ struct BatchedResult {
 struct OverallScore {
     const char* model;
     const char* url;
-    DatasetIds dataset_id;
+    dataset_types::DatasetIds dataset_id;
     float score;
     std::string score_str;
 
@@ -33,29 +33,20 @@ struct OverallScore {
 
 using ScoringFn = std::function<float(const std::vector<BatchedResult>&)>;
 
-
-enum class ScoreStrategies {
-    ACCURACY = 0,
-    F1 = 1,
-};
-
-constexpr const char* ScoreStrategiesToStr[] = {
-    "accuracy",
-    "f1"
-};
-
-ScoreStrategies scorer_strategy_from_str(const char* str);
+namespace scoring_enums {
+    DECLARE_ENUM(ScoreStrategies, Accuracy, F1);
+}
 
 
 
 struct Scorer {
     ScoringFn fn;
-    ScoreStrategies strategy;
-    explicit Scorer(enum ScoreStrategies strategy_) : strategy(strategy_) {
+    scoring_enums::ScoreStrategies strategy;
+    explicit Scorer(scoring_enums::ScoreStrategies strategy_) : strategy(strategy_) {
         switch (strategy) {
-            case ScoreStrategies::ACCURACY:
+            case scoring_enums::Accuracy:
                 fn = Scorer::accuracy_fn; break;
-            case ScoreStrategies::F1:
+            case scoring_enums::F1:
                 fn = Scorer::f1_score_fn; break;
             default: throw std::runtime_error("no valid score fn given");
         }
@@ -87,7 +78,7 @@ struct Scorer {
 
 
 struct ScoreConfig {
-    DatasetIds dataset_id;
+    dataset_types::DatasetIds dataset_id;
     const char* endpoint;
     const char* model;
     const char* config;

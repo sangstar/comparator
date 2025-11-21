@@ -43,7 +43,8 @@ file(GLOB SRC_FILES "src/*.cpp")
 file(GLOB INCLUDE_FILES "include/*.h")
 include_directories(include)
 
-add_library(comparator_lib ${SRC_FILES} ${INCLUDE_FILES})
+add_library(comparator_lib ${SRC_FILES} ${INCLUDE_FILES}
+        include/helpers.h)
 
 add_executable(comparator src/main.cpp)
 

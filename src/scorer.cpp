@@ -7,15 +7,10 @@
 void OverallScore::report() const {
     fprintf(stdout,
         "REPORT RESULT: model %s for endpoint %s got %s score on dataset %s: %f\n",
-        model, url, score_str.c_str(), DatasetIdStrs[(size_t)dataset_id],  score
+        model, url, score_str.c_str(), DatasetIds_to_str(dataset_id).c_str(),  score
         );
 }
 
-ScoreStrategies scorer_strategy_from_str(const char* str) {
-    if (strcmp(str, "accuracy") == 0) return ScoreStrategies::ACCURACY;
-    if (strcmp(str, "f1") == 0) return ScoreStrategies::F1;
-    throw std::runtime_error("invalid str for score strategy");
-}
 
 BatchedResult ScoreResult_vector_to_BatchedResult(const std::vector<QAResponse>& scores) {
     size_t correct = 0, tps = 0, fps = 0, tns = 0, fns = 0;
@@ -60,12 +55,11 @@ void score_dataset(int idx, ScoreConfig config, const Dataset& dataset, ParquetB
 }
 
 void RunScoringTask(OverallScore& score, ScoreConfig config, const Scorer& scorer, int num_threads) {
-    const char* score_str = ScoreStrategiesToStr[(size_t)scorer.strategy];
-    score.score_str = std::string(score_str);
+    score.score_str = scoring_enums::ScoreStrategies_to_str((size_t)scorer.strategy);
 
     fprintf(stdout,
         "Running scoring task: dataset=%s, model=%s, endpoint=%s, config=%s, split=%s, scoring metric: %s, workers=%i\n",
-        DatasetIdStrs[(size_t)config.dataset_id], config.model, config.endpoint, config.config, config.split, score_str, num_threads);
+        dataset_types::DatasetIds_to_str((size_t)config.dataset_id).c_str(), config.model, config.endpoint, config.config, config.split, score.score_str.c_str(), num_threads);
     Dataset mrpc = CreateDataset(config.dataset_id, config.config, config.split);
     std::thread threads[num_threads];
     std::vector<BatchedResult> results;

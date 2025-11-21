@@ -92,9 +92,9 @@ int main(int argc, char** argv) {
     int n_tokens = std::stoi(max_tokens.value);
     int n_logprobs = std::stoi(logprobs.value);
 
-    DatasetIds id = dataset_id_from_str(args.get("--dataset"));
+    dataset_types::DatasetIds id = dataset_types::str_to_DatasetIds(args.get("--dataset"));
 
-    Scorer score_strategy = Scorer(scorer_strategy_from_str(args.get("--scorer")));
+    Scorer score_strategy = Scorer(scoring_enums::str_to_ScoreStrategies(args.get("--scorer")));
     if (task == "evaluate") {
         OverallScore score{};
         ScoreConfig cfg = {id, args.get("--endpoint"), args.get("--model"), args.get("--config"), args.get("--split"), n_tokens, n_logprobs};

@@ -34,20 +34,6 @@ static auto str_contains = [](std::string_view str, std::string_view cmp) -> boo
 };
 
 
-const char* id_to_str(DatasetIds id) {
-    switch (id) {
-        case DatasetIds::NONE: return "NONE";
-        case DatasetIds::MRPC: return "MRPC";
-        default:
-            return "NONE";
-    }
-}
-
-DatasetIds dataset_id_from_str(const char* str) {
-    if (strstr(str, "mrpc") != nullptr) return DatasetIds::MRPC;
-    return DatasetIds::NONE;
-}
-
 std::optional<float> maybe_find_logprob(const std::function<bool(std::string&)>& search_fn, OAIResponseChoice& choice) {
     float best_logprob = -INFINITY;
     bool found = false;
@@ -125,9 +111,9 @@ Dataset CreateMRPCDataset(const char* config, const char* split) {
     return Dataset{data,mrpc_prompt_creation_fn, yesno_response_scorer };
 }
 
-Dataset CreateDataset(DatasetIds type, const char* config, const char* split) {
+Dataset CreateDataset(dataset_types::DatasetIds type, const char* config, const char* split) {
     switch (type) {
-        case DatasetIds::MRPC: return CreateMRPCDataset(config, split);
+        case dataset_types::DatasetIds::MRPC: return CreateMRPCDataset(config, split);
         default:
             throw std::runtime_error("Cannot make dataset for this type");
     }
