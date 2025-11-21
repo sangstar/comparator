@@ -6,8 +6,8 @@
 
 void OverallScore::report() const {
     fprintf(stdout,
-        "REPORT RESULT: model %s for endpoint %s got score on dataset %s: %f\n",
-        model, url, DatasetIdStrs[(size_t)dataset_id], score
+        "REPORT RESULT: model %s for endpoint %s got %s score on dataset %s: %f\n",
+        model, url, score_str.c_str(), DatasetIdStrs[(size_t)dataset_id],  score
         );
 }
 
@@ -18,12 +18,17 @@ ScoreStrategies scorer_strategy_from_str(const char* str) {
 }
 
 BatchedResult ScoreResult_vector_to_BatchedResult(const std::vector<QAResponse>& scores) {
-    size_t correct = 0;
+    size_t correct = 0, tps = 0, fps = 0, tns = 0, fns = 0;
+    // TODO: This ignores the yes/no logprobs and stuff
     auto rows = scores.size();
     for (const auto& score: scores) {
         correct += score.passed;
+        tps += score.tp;
+        fps += score.fp;
+        tns += score.tn;
+        fns += score.fn;
     }
-    return BatchedResult{rows, correct, (float) correct / (float) rows};
+    return BatchedResult{rows, correct, tps, fps, tns, fns, (float) correct / (float) rows};
 }
 
 BatchedResult score_batch(ScoreConfig& config, const Dataset& dataset, ParquetBatch& batch) {
@@ -56,6 +61,8 @@ void score_dataset(int idx, ScoreConfig config, const Dataset& dataset, ParquetB
 
 void RunScoringTask(OverallScore& score, ScoreConfig config, const Scorer& scorer, int num_threads) {
     const char* score_str = ScoreStrategiesToStr[(size_t)scorer.strategy];
+    score.score_str = std::string(score_str);
+
     fprintf(stdout,
         "Running scoring task: dataset=%s, model=%s, endpoint=%s, config=%s, split=%s, scoring metric: %s, workers=%i\n",
         DatasetIdStrs[(size_t)config.dataset_id], config.model, config.endpoint, config.config, config.split, score_str, num_threads);

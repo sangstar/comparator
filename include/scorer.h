@@ -14,6 +14,10 @@ static std::mutex score_mu;
 struct BatchedResult {
     size_t num_rows;
     size_t num_correct;
+    size_t count_tp;
+    size_t count_fp;
+    size_t count_tn;
+    size_t count_fn;
     float pct;
 };
 
@@ -22,6 +26,7 @@ struct OverallScore {
     const char* url;
     DatasetIds dataset_id;
     float score;
+    std::string score_str;
 
     void report() const;
 };
@@ -51,7 +56,7 @@ struct Scorer {
             case ScoreStrategies::ACCURACY:
                 fn = Scorer::accuracy_fn; break;
             case ScoreStrategies::F1:
-                throw std::runtime_error("F1 scorer not implemented yet");
+                fn = Scorer::f1_score_fn; break;
             default: throw std::runtime_error("no valid score fn given");
         }
     }
@@ -63,6 +68,20 @@ struct Scorer {
             rows_scored += batch.num_rows;
         }
         return (float) corrects / float(rows_scored);
+    }
+    static float f1_score_fn(const std::vector<BatchedResult>& batches) {
+        float tps = 0, fps = 0, tns = 0, fns = 0;
+        size_t rows_scored = 0;
+        for (const auto& batch: batches) {
+            tps += (float) batch.count_tp;
+            fps += (float) batch.count_fp;
+            tns += (float) batch.count_tn;
+            fns += (float) batch.count_fn;
+            rows_scored += batch.num_rows;
+        }
+        float precision = tps / (tps + fps);
+        float recall = tps / (tps + fns);
+        return (2 * precision * recall) / (precision + recall);
     }
 };
 

@@ -4,32 +4,29 @@
 
 #include "dataset.h"
 
-inline std::string to_lower_copy(std::string_view sv) {
+#include <cfloat>
+
+std::string normalize(std::string_view sv) {
     std::string out;
     out.reserve(sv.size());
     for (char c : sv)
-        out.push_back(std::tolower((unsigned char)c));
+        if (c != ' ') out.push_back(std::tolower((unsigned char)c));
     return out;
 }
 
-inline bool contains(std::string_view hay, std::string_view needle) {
-    return hay.find(needle) != std::string::npos;
+bool search_yes(std::string_view s) {
+    std::string str = normalize(s);
+    return str == "yes" ||
+           str == "yep" ||
+           str == "ye"  ||
+           str == "y";
 }
 
-
-inline bool search_yes(std::string_view s) {
-    auto lower = to_lower_copy(s);
-    return contains(lower, "yes") ||
-           contains(lower, "yep") ||
-           contains(lower, "ye")  ||
-           contains(lower, "y");
-}
-
-inline bool search_no(std::string_view s) {
-    auto lower = to_lower_copy(s);
-    return contains(lower, "nope") ||
-           contains(lower, "no")   ||
-           contains(lower, "n");
+bool search_no(std::string_view s) {
+    std::string str = normalize(s);
+    return str =="nope" ||
+           str == "no"  ||
+           str == "n";
 }
 
 static auto str_contains = [](std::string_view str, std::string_view cmp) -> bool {
@@ -51,41 +48,63 @@ DatasetIds dataset_id_from_str(const char* str) {
     return DatasetIds::NONE;
 }
 
-std::optional<float> maybe_find_other_logprob(const std::function<bool(std::string&)>& search_fn, OAIResponseChoice& choice) {
+std::optional<float> maybe_find_logprob(const std::function<bool(std::string&)>& search_fn, OAIResponseChoice& choice) {
+    float best_logprob = -INFINITY;
+    bool found = false;
     for (auto& lp : choice.top_logprobs) {
         if (search_fn(lp.token)) {
-            return lp.prob;
+            // In case the logprobs have both, e.g., a "yes" and " yes"
+            // separately, pick the best logprob out of them
+            found = true;
+            if (lp.prob > best_logprob) best_logprob = lp.prob;
         }
     }
-    return std::nullopt;
+    return found ? std::optional<float>(best_logprob) : std::nullopt;
 }
 
 
-QAResponse default_response_scorer(StreamedCompletions& resps, const ParquetRow* row) {
-    QAResponse resp{false, false};
+QAResponse yesno_response_scorer(StreamedCompletions& resps, const ParquetRow* row) {
+    QAResponse resp{false, false, false, false};
 
     size_t size = resps.size();
+    bool label = static_cast<bool>(std::get<uint64_t>((*row)[2]));
 
     for (size_t i = 0; i < size; ++i) {
         for (auto& choice : resps[i].choices) {
             if (choice.text.empty()) continue;
-            bool label = static_cast<bool>(std::get<uint64_t>((*row)[2]));
-            bool is_yes = search_yes(choice.text);
-            bool is_no = search_no(choice.text);
+            auto yes_logprob = maybe_find_logprob(search_yes, choice);
+            auto no_logprob = maybe_find_logprob(search_no, choice);
+            bool is_yes = yes_logprob.has_value() && no_logprob.has_value() && yes_logprob.value() > no_logprob.value();
+            bool is_no = yes_logprob.has_value() && no_logprob.has_value() && yes_logprob.value() < no_logprob.value();
+
             if (is_yes) {
-                resp.yes = true;
-                resp.yes_logprob = choice.token_logprobs[0];
-                resp.no_logprob = maybe_find_other_logprob(search_no, choice);
-                if (label && is_yes) resp.passed = true;
+                resp.yes_logprob = yes_logprob;
+                resp.no_logprob = no_logprob;
+                if (label && is_yes) {
+                    resp.passed = true;
+                    resp.tp = true;
+                } else {
+                    resp.passed = false;
+                    resp.fp = true;
+                }
+                return resp;
             }
-            else if (is_no) {
-                resp.yes = false;
-                resp.no_logprob = choice.token_logprobs[0];
-                resp.yes_logprob = maybe_find_other_logprob(search_yes, choice);
-                if (label && is_no) resp.passed = true;
+            if (is_no) {
+                resp.no_logprob = no_logprob;
+                resp.yes_logprob = yes_logprob;
+                if (!label && is_no) {
+                    resp.passed = true;
+                    resp.tn = true;
+                } else {
+                    resp.passed = false;
+                    resp.fn = true;
+                }
+                return resp;
             }
         }
     }
+    resp.passed = false;
+    label ? resp.fn = true : resp.fp = true;
     return resp;
 }
 
@@ -103,7 +122,7 @@ Dataset CreateMRPCDataset(const char* config, const char* split) {
         s.append("\\n\\nAnswer: ");
         return s;
     };
-    return Dataset{data,mrpc_prompt_creation_fn, default_response_scorer };
+    return Dataset{data,mrpc_prompt_creation_fn, yesno_response_scorer };
 }
 
 Dataset CreateDataset(DatasetIds type, const char* config, const char* split) {

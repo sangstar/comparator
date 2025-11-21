@@ -21,7 +21,10 @@ constexpr const char* DatasetIdStrs[] = {
 DatasetIds dataset_id_from_str(const char* str);
 
 struct QAResponse {
-    bool yes;
+    bool tp;
+    bool fp;
+    bool tn;
+    bool fn;
     bool passed;
     std::optional<float> yes_logprob;
     std::optional<float> no_logprob;
@@ -36,5 +39,7 @@ struct Dataset {
 Dataset CreateMRPCDataset(const char* config, const char* split);
 
 Dataset CreateDataset(DatasetIds type, const char* config, const char* split);
+
+QAResponse yesno_response_scorer(StreamedCompletions& resps, const ParquetRow* row);
 
 #endif //COMPARATOR_DATASET_H
