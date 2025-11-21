@@ -26,7 +26,7 @@ std::string HFDatasetURLConstructor::get_dataset_parsed(const char* dataset) {
 
 std::string HFDatasetURLConstructor::construct(const char* dataset, const char* config, const char* split) {
     char buf[512] = {};
-    snprintf(buf, sizeof(buf), fmt_string, dataset, config, split);
+    snprintf(buf, sizeof(buf), basic_fmt_string, dataset, config, split);
     return {buf};
 }
 
@@ -131,6 +131,9 @@ ParquetVal ParquetColumn::at(size_t idx) const {
     switch (type) {
         case arrow::Type::STRING: {
             return ParquetColumnEntry::get(arr.get(), get_string, idx);
+        }
+        case arrow::Type::INT32: {
+            return ParquetColumnEntry::get(arr.get(), get_int32, idx);
         }
         case arrow::Type::INT64: {
             return ParquetColumnEntry::get(arr.get(), get_int64, idx);

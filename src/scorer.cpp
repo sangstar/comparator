@@ -39,7 +39,7 @@ BatchedResult score_batch(ScoreConfig& config, const Dataset& dataset, ParquetBa
         if (!is_valid_resp(resp)) throw std::runtime_error("invalid resp: " + resp);
         auto compls = get_responses_from_json(resp.c_str());
         scores.emplace_back(
-            dataset.response_scorer_fn(compls, &row)
+            dataset.response_scorer_fn(compls, &row, dataset.label_accessor_fn)
         );
     }
     return ScoreResult_vector_to_BatchedResult(scores);
@@ -60,18 +60,18 @@ void RunScoringTask(OverallScore& score, ScoreConfig config, const Scorer& score
     fprintf(stdout,
         "Running scoring task: dataset=%s, model=%s, endpoint=%s, config=%s, split=%s, scoring metric: %s, workers=%i\n",
         comparator_enums::DatasetIds_to_str((size_t)config.dataset_id).c_str(), config.model, config.endpoint, config.config, config.split, score.score_str.c_str(), num_threads);
-    Dataset mrpc = CreateDataset(config.dataset_id, config.config, config.split);
+    Dataset dset = CreateDataset(config.dataset_id, config.config, config.split);
     std::thread threads[num_threads];
     std::vector<BatchedResult> results;
 
     // Give each thread an equally sized chunk per batch
-    mrpc.data.reader.set_chunksize(mrpc.data.table->num_rows() / num_threads);
+    dset.data.reader.set_chunksize(dset.data.table->num_rows() / num_threads);
 
     for (int i = 0; i < num_threads; ++i) {
-        const auto batch = mrpc.data.get_batch();
+        const auto batch = dset.data.get_batch();
         if (batch.has_value()) {
-            threads[i] = std::thread([i, config, mrpc, batch, &results] {
-                score_dataset(i, config, mrpc, batch.value(), results);
+            threads[i] = std::thread([i, config, dset, batch, &results] {
+                score_dataset(i, config, dset, batch.value(), results);
             });
         }
     }

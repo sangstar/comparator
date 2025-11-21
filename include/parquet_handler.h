@@ -14,8 +14,9 @@
 #include <parquet/arrow/reader.h>
 
 
-constexpr const char* fmt_string =
+constexpr const char* basic_fmt_string =
         "https://huggingface.co/api/datasets/%s/parquet/%s/%s";
+
 
 constexpr const char* default_fp = "/tmp/p_%s_.parquet";
 
@@ -89,6 +90,11 @@ struct ParquetColumn {
     GetterFn get_int64 = [](arrow::Array* arr, size_t idx){
         auto a = static_cast<arrow::Int64Array*>(arr);
         return ParquetVal((uint64_t)a->Value(idx));
+    };
+
+    GetterFn get_int32 = [](arrow::Array* arr, size_t idx){
+        auto a = static_cast<arrow::Int32Array*>(arr);
+        return ParquetVal((uint32_t)a->Value(idx));
     };
 
     GetterFn get_string = [](arrow::Array* arr, size_t idx){

@@ -49,11 +49,11 @@ std::optional<float> maybe_find_logprob(const std::function<bool(std::string&)>&
 }
 
 
-QAResponse yesno_response_scorer(StreamedCompletions& resps, const ParquetRow* row) {
+QAResponse yesno_response_scorer(StreamedCompletions& resps, const ParquetRow* row, bool (*label_accessor_fn)(const ParquetRow*)) {
     QAResponse resp{false, false, false, false};
 
     size_t size = resps.size();
-    bool label = static_cast<bool>(std::get<uint64_t>((*row)[2]));
+    bool label = label_accessor_fn(row);
 
     for (size_t i = 0; i < size; ++i) {
         for (auto& choice : resps[i].choices) {
@@ -108,12 +108,32 @@ Dataset CreateMRPCDataset(const char* config, const char* split) {
         s.append("\\n\\nAnswer: ");
         return s;
     };
-    return Dataset{data,mrpc_prompt_creation_fn, yesno_response_scorer };
+    auto label_accessor = [](const ParquetRow* row) -> bool {
+        return static_cast<bool>(std::get<uint64_t>((*row)[2]));
+    };
+    return Dataset{data,mrpc_prompt_creation_fn, label_accessor, yesno_response_scorer,  };
+}
+
+Dataset CreateColaDataset(const char* split) {
+    ParquetTableViewer data = get_hf_dataset("nyu-mll/glue", "cola", split);
+    auto cola_prompt_creation_fn = [](const ParquetRow* row) -> std::string {
+        std::string s;
+        std::string_view text1 = std::get<std::string_view>((*row)[0]);
+        s.append("Is the following sentence grammatically acceptable? Yes or no.\\nSentence: \\n");
+        s.append(text1);
+        s.append("\\n\\nAnswer: ");
+        return s;
+    };
+    auto label_accessor = [](const ParquetRow* row) -> bool {
+        return static_cast<bool>(std::get<uint64_t>((*row)[1]));
+    };
+    return Dataset{data,cola_prompt_creation_fn, label_accessor, yesno_response_scorer, };
 }
 
 Dataset CreateDataset(comparator_enums::DatasetIds type, const char* config, const char* split) {
     switch (type) {
-        case comparator_enums::DatasetIds::MRPC: return CreateMRPCDataset(config, split);
+        case comparator_enums::MRPC: return CreateMRPCDataset(config, split);
+        case comparator_enums::COLA: return CreateColaDataset(split);
         default:
             throw std::runtime_error("Cannot make dataset for this type");
     }
