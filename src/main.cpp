@@ -46,7 +46,44 @@ struct ArgSet {
         }
         return "null";
     }
+    void print() {
+        for (const auto& arg_ : args) {
+            fprintf(stdout, "%s -> %s\n", arg_->arg.c_str(), arg_->desc);
+        }
+    }
 };
+
+void print_args() {
+    fprintf(stdout, "comparator [evaluate/compare] [ARGS]\n");
+    Arg max_tokens {"--max-tokens", "", "max tokens for model responses", "5"};
+    Arg logprobs {"--num-logprobs", "", "num logprobs to return from model responses", "5"};
+    Arg workers {"--workers", "", "number of workers to use per dataset scoring", "5"};
+    Arg scorer {"--scorer", "", "metric to score with e.g. accuracy, f1, etc", "accuracy"};
+    ArgSet base_args = {std::vector<Arg*>{ &max_tokens, &logprobs, &workers, &scorer }};
+
+    fprintf(stdout, "%s", "comparator args: \nbase args (applies to both 'compare' and 'evaluate'):\n");
+    base_args.print();
+
+    ArgSet evaluate_args;
+    Arg model {"--model", "", "model id for inference", nullptr};
+    Arg endpoint {"--endpoint", "", "endpoint uri", nullptr};
+    Arg dataset {"--dataset", "", "hf dataset id to use, e.g. SetFit/mrpc", nullptr};
+    Arg config {"--config", "", "hf dataset id config to use (e.g. default, cola, etc)", "default"};
+    Arg split {"--split", "", "hf dataset split to use (e.g. train, test, etc)", "train"};
+    evaluate_args = { std::vector<Arg*>{&model, &endpoint, &dataset, &config, &split}};
+
+    fprintf(stdout, "comparator evaluate args:\n");
+    evaluate_args.print();
+
+    Arg model_a {"--model_a", "", "model id for model A", nullptr};
+    Arg endpoint_a {"--endpoint_a", "", "endpoint uri for model A", nullptr};
+    Arg model_b {"--model_b", "", "model id for model B", nullptr};
+    Arg endpoint_b {"--endpoint_b", "", "endpoint uri for model B", nullptr};
+    ArgSet compare_args = { std::vector<Arg*>{&model_a, &endpoint_a, &model_b, &endpoint_b, &dataset, &config, &split}};
+    fprintf(stdout, "comparator compare args:\n");
+    compare_args.print();
+
+}
 
 int main(int argc, char** argv) {
     const char* debug_level = getenv("COMPARATOR_DEBUG");
@@ -81,9 +118,11 @@ int main(int argc, char** argv) {
         Arg config {"--config", "", "hf dataset id config to use", "default"};
         Arg split {"--split", "", "hf dataset split to use (e.g. train, test..)", "train"};
         args = { std::vector<Arg*>{&model_a, &endpoint_a, &model_b, &endpoint_b, &dataset, &config, &split}};
-    } else {
-        throw std::runtime_error("invalid subcommand: " + std::string(task));
-    }
+    } else if (task == "help") {
+        print_args();
+        exit(0);
+    } else throw std::runtime_error("invalid subcommand: " + std::string(task));
+
 
     args.args.emplace_back(&max_tokens);
     args.args.emplace_back(&logprobs);

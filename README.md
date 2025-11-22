@@ -18,9 +18,33 @@ cmake --build <build-dir> --target comparator -j 8
 
 ### Usage example
 ```text
-./comparator compare --model_a gpt-3.5-turbo-instruct --model_b babbage-002 --dataset MRPC --endpoint_a https://api.openai.com/v1/completions --endpoint_b https://api.openai.com/v1/completions --scorer f1
-[comparator] INFO - Running scoring task: dataset=MRPC, model=gpt-3.5-turbo-instruct, endpoint=https://api.openai.com/v1/completions, config=default, split=train, scoring metric: F1, workers=5
 [comparator] INFO - Running scoring task: dataset=MRPC, model=babbage-002, endpoint=https://api.openai.com/v1/completions, config=default, split=train, scoring metric: F1, workers=5
-[comparator] INFO - REPORT RESULT: model gpt-3.5-turbo-instruct for endpoint https://api.openai.com/v1/completions got F1 score on dataset MRPC: 0.727273
-[comparator] INFO - REPORT RESULT: model babbage-002 for endpoint https://api.openai.com/v1/completions got F1 score on dataset MRPC: 0.387097
+[comparator] INFO - Running scoring task: dataset=MRPC, model=gpt-3.5-turbo-instruct, endpoint=https://api.openai.com/v1/completions, config=default, split=train, scoring metric: F1, workers=5
+[comparator] INFO - model gpt-3.5-turbo-instruct got F1 score on dataset MRPC: 0.695652
+[comparator] INFO - model babbage-002 got F1 score on dataset MRPC: 0.484848
+```
+
+### CLI args
+```text
+./comparator help
+comparator [evaluate/compare] [ARGS]
+base args (applies to both 'compare' and 'evaluate'):
+--max-tokens -> max tokens for model responses
+--num-logprobs -> num logprobs to return from model responses
+--workers -> number of workers to use per dataset scoring
+--scorer -> metric to score with e.g. accuracy, f1, etc
+comparator evaluate args:
+--model -> model id for inference
+--endpoint -> endpoint uri
+--dataset -> hf dataset id to use, e.g. SetFit/mrpc
+--config -> hf dataset id config to use (e.g. default, cola, etc)
+--split -> hf dataset split to use (e.g. train, test, etc)
+comparator compare args:
+--model_a -> model id for model A
+--endpoint_a -> endpoint uri for model A
+--model_b -> model id for model B
+--endpoint_b -> endpoint uri for model B
+--dataset -> hf dataset id to use, e.g. SetFit/mrpc
+--config -> hf dataset id config to use (e.g. default, cola, etc)
+--split -> hf dataset split to use (e.g. train, test, etc)
 ```

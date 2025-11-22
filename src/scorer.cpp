@@ -6,8 +6,8 @@
 #include "helpers.h"
 
 void OverallScore::report() const {
-    INFO("REPORT RESULT: model %s for endpoint %s got %s score on dataset %s: %f",
-        model, url, score_str.c_str(), DatasetIds_to_str(dataset_id).c_str(),  score
+    INFO("model %s got %s score on dataset %s: %f",
+        model,score_str.c_str(), DatasetIds_to_str(dataset_id).c_str(),  score
         );
 }
 
