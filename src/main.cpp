@@ -6,6 +6,9 @@
 #include <vector>
 #include "scorer.h"
 
+comparator_enums::LogLevel DebugLevel  = comparator_enums::INFO;
+
+
 struct Arg {
     std::string arg;
     std::string value;
@@ -46,6 +49,9 @@ struct ArgSet {
 };
 
 int main(int argc, char** argv) {
+    const char* debug_level = getenv("COMPARATOR_DEBUG");
+    if (debug_level != nullptr) DebugLevel = comparator_enums::str_to_LogLevel(debug_level);
+
     if (argc <= 1) {
         throw std::runtime_error("no args provided");
     }

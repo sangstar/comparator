@@ -42,17 +42,23 @@ inline std::vector<std::string> str_split(std::string_view str) {
         constexpr const char* name##Strs = #__VA_ARGS__; \
         constexpr name name##List[] = { __VA_ARGS__ }; \
         inline std::string name##_to_str(size_t id) { \
-        auto vals = str_split(name##Strs); \
-        return vals[id]; \
+            auto vals = str_split(name##Strs); \
+            return vals[id]; \
         } \
         inline name str_to_##name(std::string_view str) { \
-        name ret; \
-        ENUM_FROM_STR(name, str, ret); \
-        return ret; \
+            name ret; \
+            ENUM_FROM_STR(name, str, ret); \
+            return ret; \
         } \
     }
 
+DECLARE_ENUM(LogLevel, INFO, TRACE);
 
+extern comparator_enums::LogLevel DebugLevel;
 
+#define LOG(level, to_fmt, ...) \
+    fprintf(stdout, "[comparator] %s - " to_fmt "\n", LogLevel_to_str(level).c_str(), __VA_ARGS__)
+
+#define INFO(to_fmt, ...) LOG(comparator_enums::LogLevel::INFO, to_fmt, __VA_ARGS__)
 
 #endif //COMPARATOR_HELPERS_H
