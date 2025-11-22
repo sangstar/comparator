@@ -14,7 +14,6 @@ void OverallScore::report() const {
 
 BatchedResult ScoreResult_vector_to_BatchedResult(const std::vector<QAResponse>& scores) {
     size_t correct = 0, tps = 0, fps = 0, tns = 0, fns = 0;
-    // TODO: This ignores the yes/no logprobs and stuff
     auto rows = scores.size();
     for (const auto& score: scores) {
         correct += score.passed;

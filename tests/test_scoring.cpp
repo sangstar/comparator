@@ -15,9 +15,9 @@ TEST_CASE("Test scoring") {
     std::thread threads[workers];
     OverallScore scores[workers];
 
-    ScoreConfig cfg = {DatasetIds::MRPC, "https://api.openai.com/v1/completions",  "gpt-3.5-turbo-instruct", "default", "train"};
+    ScoreConfig cfg = {comparator_enums::DatasetIds::MRPC, "https://api.openai.com/v1/completions",  "gpt-3.5-turbo-instruct", "default", "train"};
 
-    Scorer scorer = Scorer(ScoreStrategies::ACCURACY);
+    Scorer scorer = Scorer(comparator_enums::ScoreStrategies::Accuracy);
     threads[0] = std::thread([&scores, scorer, cfg, num_threads_per_task] {
         RunScoringTask(scores[0], cfg, scorer, num_threads_per_task);
     });
